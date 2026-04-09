@@ -1,0 +1,253 @@
+/* ── 기본 레이아웃 ─────────────────────────────────── */
+body { font-size: 14px; }
+
+/* ── 헤더 ─────────────────────────────────────────── */
+.navbar-brand { font-weight: 700; letter-spacing: -0.5px; }
+#today-display { font-size: 0.85rem; opacity: 0.85; }
+
+/* ── 요약 배너 ─────────────────────────────────────── */
+#summary-banner {
+  font-size: 0.85rem;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  padding: 0.5rem 1rem;
+}
+
+/* ── 탭 영역 ───────────────────────────────────────── */
+.tab-area { background: #f8f9fa; border-bottom: 1px solid #dee2e6; }
+[data-bs-theme="dark"] .tab-area { background: #212529; border-color: #495057; }
+
+/* ── 검색·필터 영역 ────────────────────────────────── */
+.toolbar { background: #fff; border-bottom: 1px solid #dee2e6; padding: 0.6rem 1rem; }
+[data-bs-theme="dark"] .toolbar { background: #2b2d30; border-color: #495057; }
+#search-count { font-size: 0.78rem; color: #6c757d; white-space: nowrap; }
+
+/* ── 뷰 전환 버튼 ──────────────────────────────────── */
+.view-btn.active { background: var(--bs-primary); color: #fff; border-color: var(--bs-primary); }
+
+/* ═══════════════════════════════════════════════════
+   시간표 그리드 뷰 (F1)
+   ═══════════════════════════════════════════════════ */
+#grid-view { overflow: auto; max-height: calc(100vh - 200px); }
+
+#timetable {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 800px;
+  font-size: 0.78rem;
+}
+
+/* 헤더 그룹행 */
+#timetable .th-group {
+  background: #343a40;
+  color: #fff;
+  text-align: center;
+  font-weight: 600;
+  padding: 5px 8px;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border: 1px solid #495057;
+}
+[data-bs-theme="dark"] #timetable .th-group { background: #1a1d21; }
+
+/* 강의실 헤더행 */
+#timetable .th-room {
+  background: #495057;
+  color: #fff;
+  text-align: center;
+  font-weight: 500;
+  padding: 4px 8px;
+  white-space: nowrap;
+  position: sticky;
+  top: 28px;
+  z-index: 3;
+  border: 1px solid #6c757d;
+  font-size: 0.72rem;
+}
+
+/* 시간 열 */
+#timetable .td-time {
+  background: #f8f9fa;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px 6px;
+  white-space: nowrap;
+  color: #495057;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  border: 1px solid #dee2e6;
+  font-size: 0.72rem;
+  width: 52px;
+  min-width: 52px;
+}
+[data-bs-theme="dark"] #timetable .td-time {
+  background: #2b2d30;
+  color: #adb5bd;
+  border-color: #495057;
+}
+
+/* 빈 셀 */
+#timetable .td-empty {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  min-width: 120px;
+}
+[data-bs-theme="dark"] #timetable .td-empty {
+  background: #212529;
+  border-color: #343a40;
+}
+
+/* 과정 셀 */
+#timetable .td-course {
+  border: 1px solid #dee2e6;
+  padding: 5px 7px;
+  vertical-align: top;
+  cursor: pointer;
+  min-width: 130px;
+  max-width: 200px;
+  transition: background 0.15s;
+}
+#timetable .td-course:hover { filter: brightness(0.95); }
+
+.course-name {
+  font-weight: 600;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  word-break: keep-all;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.course-meta { font-size: 0.68rem; color: #6c757d; margin-top: 3px; line-height: 1.4; }
+[data-bs-theme="dark"] .course-meta { color: #adb5bd; }
+
+.course-assign {
+  font-size: 0.68rem;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.assign-bar {
+  flex: 1;
+  height: 4px;
+  background: #dee2e6;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.assign-fill { height: 100%; border-radius: 2px; }
+.fill-low  { background: #28a745; }
+.fill-mid  { background: #fd7e14; }
+.fill-high { background: #dc3545; }
+
+/* 상태별 셀 배경 */
+.td-active  { background: #f0fff4; }
+.td-today   { background: #e8f4fd; border-left: 3px solid #0d6efd !important; }
+.td-ended   { background: #f8f9fa; opacity: 0.7; }
+[data-bs-theme="dark"] .td-active { background: #1a3a2a; }
+[data-bs-theme="dark"] .td-today  { background: #0d2a4a; }
+[data-bs-theme="dark"] .td-ended  { background: #1a1d21; opacity: 0.6; }
+
+.ended-name { text-decoration: line-through; opacity: 0.6; }
+
+/* ═══════════════════════════════════════════════════
+   과정 목록 뷰 (F2)
+   ═══════════════════════════════════════════════════ */
+#list-view { overflow-y: auto; max-height: calc(100vh - 200px); padding: 1rem; }
+
+.course-card {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.1s;
+  background: #fff;
+}
+.course-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+[data-bs-theme="dark"] .course-card { background: #2b2d30; border-color: #495057; }
+
+.card-course-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  margin-bottom: 0.5rem;
+  word-break: keep-all;
+}
+.card-meta { font-size: 0.78rem; color: #6c757d; line-height: 1.8; }
+[data-bs-theme="dark"] .card-meta { color: #adb5bd; }
+.card-meta span { margin-right: 0.5rem; }
+
+.card-assign-bar {
+  height: 5px;
+  background: #dee2e6;
+  border-radius: 3px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.card-assign-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+/* 상태 배지 */
+.badge-active  { background: #28a745; color: #fff; }
+.badge-today   { background: #0d6efd; color: #fff; }
+.badge-ended   { background: #adb5bd; color: #fff; }
+.badge-planned { background: #6c757d; color: #fff; }
+
+/* 검색 하이라이트 */
+mark { background: #fff3cd; padding: 0 1px; border-radius: 2px; }
+[data-bs-theme="dark"] mark { background: #5a4a00; color: #fff; }
+
+/* ═══════════════════════════════════════════════════
+   모달 (F4)
+   ═══════════════════════════════════════════════════ */
+.modal-field-label {
+  font-size: 0.78rem;
+  color: #6c757d;
+  font-weight: 500;
+  width: 90px;
+  flex-shrink: 0;
+}
+[data-bs-theme="dark"] .modal-field-label { color: #adb5bd; }
+.modal-field-value { font-size: 0.88rem; }
+
+.modal-assign-bar {
+  height: 8px;
+  background: #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+  width: 120px;
+}
+.modal-assign-fill { height: 100%; border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════════
+   로딩 / 빈 상태
+   ═══════════════════════════════════════════════════ */
+#loading-overlay {
+  position: fixed; inset: 0;
+  background: rgba(255,255,255,0.7);
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+}
+[data-bs-theme="dark"] #loading-overlay { background: rgba(0,0,0,0.5); }
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+/* ═══════════════════════════════════════════════════
+   인쇄 (N3)
+   ═══════════════════════════════════════════════════ */
+@media print {
+  .navbar, .toolbar, #summary-banner, .tab-area,
+  #detail-modal, #loading-overlay { display: none !important; }
+  #grid-view { max-height: none; overflow: visible; }
+  #timetable .td-time, #timetable .th-group, #timetable .th-room { position: static; }
+  body { font-size: 10px; }
+  @page { orientation: landscape; }
+}

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT대구 강의시간표</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+
+<!-- ── 로딩 오버레이 ──────────────────────────────── -->
+<div id="loading-overlay" style="display:none">
+  <div class="text-center">
+    <div class="spinner-border text-primary mb-2" role="status"></div>
+    <div style="font-size:0.85rem;color:#6c757d">불러오는 중...</div>
+  </div>
+</div>
+
+<!-- ── 상단 네비게이션 ────────────────────────────── -->
+<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom px-3 py-2">
+  <span class="navbar-brand mb-0 h5">📋 IT대구 강의시간표</span>
+  <div class="ms-auto d-flex align-items-center gap-2">
+    <span id="today-display" class="text-muted"></span>
+    <button id="btn-upload" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#upload-modal" title="시간표 파일 업로드">📤 업로드</button>
+    <button id="btn-dark" class="btn btn-sm btn-outline-secondary" title="다크모드 전환">🌙</button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()" title="인쇄">🖨️</button>
+  </div>
+</nav>
+
+<!-- ── 요약 배너 (F6) ─────────────────────────────── -->
+<div id="summary-banner" class="alert alert-success alert-dismissible mb-0 py-2" style="display:none;border-radius:0"></div>
+
+<!-- ── 탭 영역 (F5) ──────────────────────────────── -->
+<div class="tab-area px-3 py-2">
+  <div class="d-flex align-items-center gap-3 flex-wrap">
+    <div id="month-tabs" class="d-flex gap-1"></div>
+    <div class="vr d-none d-sm-block" style="height:24px"></div>
+    <div id="type-tabs" class="d-flex gap-1"></div>
+  </div>
+</div>
+
+<!-- ── 툴바 (검색·필터·뷰전환) ───────────────────── -->
+<div class="toolbar d-flex flex-wrap gap-2 align-items-center">
+  <!-- 검색 (F3) -->
+  <div class="input-group input-group-sm" style="max-width:320px;min-width:200px">
+    <span class="input-group-text">🔍</span>
+    <input id="search-input" type="text" class="form-control"
+           placeholder="과정명 / 강사 / 강의실 검색">
+    <button id="search-clear" class="btn btn-outline-secondary" style="display:none">✕</button>
+  </div>
+  <span id="search-count" class="text-muted"></span>
+
+  <!-- 필터 (N1) -->
+  <select id="filter-teacher" class="form-select form-select-sm" style="max-width:130px">
+    <option value="">강사 전체</option>
+  </select>
+  <select id="filter-room" class="form-select form-select-sm" style="max-width:140px">
+    <option value="">강의실 전체</option>
+  </select>
+  <button id="filter-reset" class="btn btn-sm btn-outline-secondary">초기화</button>
+
+  <!-- 뷰 전환 -->
+  <div class="ms-auto btn-group btn-group-sm">
+    <button id="btn-grid" class="btn btn-outline-primary view-btn" title="시간표 뷰">
+      ⊞ 시간표
+    </button>
+    <button id="btn-list" class="btn btn-outline-primary view-btn" title="목록 뷰">
+      ☰ 목록
+    </button>
+  </div>
+</div>
+
+<!-- ── 정렬 바 (N2, 목록 뷰용) ───────────────────── -->
+<div id="sort-bar" class="px-3 py-1 border-bottom d-flex gap-1 align-items-center" style="font-size:0.78rem;background:var(--bs-body-bg)">
+  <span class="text-muted me-1">정렬:</span>
+  <button class="btn btn-sm btn-outline-secondary sort-btn py-0 px-2"
+          data-sort="개강일" data-label="개강일" data-dir="1" data-current-key="">개강일 ▲</button>
+  <button class="btn btn-sm btn-outline-secondary sort-btn py-0 px-2"
+          data-sort="과정명" data-label="과정명" data-dir="1" data-current-key="">과정명</button>
+  <button class="btn btn-sm btn-outline-secondary sort-btn py-0 px-2"
+          data-sort="종강일" data-label="종강일" data-dir="1" data-current-key="">종강일</button>
+  <button class="btn btn-sm btn-outline-secondary sort-btn py-0 px-2"
+          data-sort="배정" data-label="배정인원" data-dir="1" data-current-key="">배정인원</button>
+</div>
+
+<!-- ── 메인 콘텐츠 ────────────────────────────────── -->
+<div id="grid-view"></div>
+
+<div id="list-view" style="display:none"></div>
+
+<!-- ── 파일 업로드 모달 ────────────────────────────── -->
+<div class="modal fade" id="upload-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">📤 시간표 파일 업로드</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" style="font-size:0.82rem">
+          새 시간표 엑셀 파일을 업로드하면 기존 파일을 교체합니다.<br>
+          지원 형식: <strong>.xlsx</strong> / .xls / .csv
+        </p>
+
+        <!-- 드롭존 -->
+        <div id="drop-zone" class="border rounded-3 text-center p-4 mb-3"
+             style="border-style:dashed!important;cursor:pointer;transition:background 0.2s">
+          <div style="font-size:2rem">📁</div>
+          <div class="mt-1" style="font-size:0.85rem">파일을 여기에 드래그하거나 클릭해서 선택</div>
+          <div id="selected-file" class="text-primary mt-1" style="font-size:0.8rem"></div>
+          <input id="upload-file-input" type="file" accept=".xlsx,.xls,.csv" class="d-none">
+        </div>
+
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label class="form-label form-label-sm mb-1">월 <span class="text-danger">*</span></label>
+            <select id="upload-month" class="form-select form-select-sm">
+              <option value="">선택</option>
+              {% for m in range(4, 13) %}<option value="{{ m }}">{{ m }}월</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label form-label-sm mb-1">구분 <span class="text-danger">*</span></label>
+            <select id="upload-type" class="form-select form-select-sm">
+              <option value="">선택</option>
+              <option value="weekday">평일</option>
+              <option value="weekend">주말</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="upload-result" class="mt-2" style="font-size:0.82rem"></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">취소</button>
+        <button id="btn-do-upload" class="btn btn-sm btn-primary">업로드</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 과정 상세 모달 (F4) ───────────────────────── -->
+<div class="modal fade" id="detail-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">과정 상세 정보</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/grid.js') }}"></script>
+<script src="{{ url_for('static', filename='js/list.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

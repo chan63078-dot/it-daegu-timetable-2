@@ -1,0 +1,129 @@
+:root {
+    --primary-color: #3563E9;
+    --bg-color: #F6F7F9;
+    --sidebar-color: #FFFFFF;
+    --text-main: #1A202C;
+    --text-sub: #90A3BF;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+}
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* 사이드바 */
+.sidebar {
+    width: 250px;
+    background-color: var(--sidebar-color);
+    padding: 30px 20px;
+    border-right: 1px solid #E0E4EC;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 50px;
+}
+
+.menu li {
+    list-style: none;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--text-sub);
+    transition: 0.3s;
+}
+
+.menu li.active, .menu li:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* 메인 컨텐츠 */
+.main-content {
+    flex: 1;
+    padding: 30px;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+/* 월별 섹션 및 카드 */
+.month-section {
+    margin-bottom: 50px;
+}
+
+.month-title {
+    font-size: 20px;
+    margin-bottom: 20px;
+    padding-left: 10px;
+    border-left: 5px solid var(--primary-color);
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.course-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.02);
+    transition: transform 0.3s;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+}
+
+.room-tag {
+    background: #E7EEFF;
+    color: var(--primary-color);
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.course-name {
+    margin: 15px 0;
+    font-size: 18px;
+}
+
+.card-body p {
+    font-size: 14px;
+    color: var(--text-sub);
+    margin: 5px 0;
+}
+
+.seat-count {
+    color: #ED3F3F;
+    font-weight: bold;
+}
+
+.card-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #F3F5F7;
+    text-align: right;
+}
+
+.price {
+    font-weight: bold;
+    font-size: 16px;
+}
