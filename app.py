@@ -1,7 +1,9 @@
 import os
-from flask import Flask, render_template, jsonify, request
+import io
+from flask import Flask, render_template, jsonify, request, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+import pandas as pd
 from services.csv_service import get_available_files, get_timetable, search_courses, CSV_DIR
 
 app = Flask(__name__)
@@ -71,6 +73,63 @@ def api_upload():
         'type': type_key,
         'total': count,
     })
+
+
+@app.route('/api/export')
+def api_export():
+    month    = request.args.get('month', 4, type=int)
+    type_key = request.args.get('type', 'weekday')
+    teacher  = request.args.get('teacher', '')
+    room     = request.args.get('room', '')
+    query    = request.args.get('q', '')
+
+    data = get_timetable(month, type_key)
+    if data is None:
+        return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
+
+    courses = data['courses']
+
+    # 필터 적용
+    if teacher:
+        courses = [c for c in courses if c.get('강사') == teacher]
+    if room:
+        courses = [c for c in courses if c.get('room') == room]
+    if query:
+        q = query.lower().replace(' ', '')
+        courses = [c for c in courses if q in (
+            c.get('과정명', '') + c.get('강사', '') + c.get('room', '')
+        ).lower().replace(' ', '')]
+
+    COLUMNS = ['과정명', 'room', '강사', '요일', '시작시간', '종료시간',
+               '개강일', '종강일', '정원', '수강인원', '배정', '전체출석율', '진행상태', '비고']
+    LABELS  = ['과정명', '강의실', '강사', '요일', '시작시간', '종료시간',
+               '개강일', '종강일', '정원', '수강인원', '배정', '전체출석율', '진행상태', '비고']
+
+    rows = []
+    for c in courses:
+        rows.append([c.get(col, '') for col in COLUMNS])
+
+    df = pd.DataFrame(rows, columns=LABELS)
+
+    type_label = '평일' if type_key == 'weekday' else '주말'
+    filename = f'IT대구_{month}월_{type_label}_강의시간표.xlsx'
+
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='시간표')
+        ws = writer.sheets['시간표']
+        # 열 너비 자동 조정
+        for col_cells in ws.columns:
+            length = max(len(str(cell.value or '')) for cell in col_cells)
+            ws.column_dimensions[col_cells[0].column_letter].width = min(length + 4, 40)
+    buf.seek(0)
+
+    return send_file(
+        buf,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename,
+    )
 
 
 @app.route('/api/courses')

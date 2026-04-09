@@ -512,7 +512,27 @@ function initUpload() {
   });
 }
 
+// ── 엑셀 내보내기 ───────────────────────────────────
+function initExport() {
+  document.getElementById('btn-export').addEventListener('click', () => {
+    const teacher = document.getElementById('filter-teacher').value;
+    const room    = document.getElementById('filter-room').value;
+    const query   = state.query;
+
+    const params = new URLSearchParams({
+      month: state.month,
+      type:  state.type,
+    });
+    if (teacher) params.set('teacher', teacher);
+    if (room)    params.set('room', room);
+    if (query)   params.set('q', query);
+
+    window.location.href = `/api/export?${params.toString()}`;
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   main();
   initUpload();
+  initExport();
 });
