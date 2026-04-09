@@ -132,6 +132,33 @@ def api_export():
     )
 
 
+@app.route('/api/empty-rooms')
+def api_empty_rooms():
+    month    = request.args.get('month', 4, type=int)
+    type_key = request.args.get('type', 'weekday')
+
+    data = get_timetable(month, type_key)
+    if data is None:
+        return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
+
+    rooms     = data['rooms']
+    timeslots = data['timeslots']
+    grid      = data['grid']
+
+    # 각 시간대별 빈 강의실 계산
+    result = []
+    for t in timeslots:
+        empty = [r for r in rooms if grid[t].get(r) is None]
+        if empty:
+            result.append({'time': t, 'rooms': empty})
+
+    return jsonify({
+        'timeslots': timeslots,
+        'rooms': rooms,
+        'empty_by_time': result,
+    })
+
+
 @app.route('/api/courses')
 def api_courses():
     month = request.args.get('month', 4, type=int)

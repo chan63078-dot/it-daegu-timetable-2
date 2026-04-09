@@ -512,6 +512,90 @@ function initUpload() {
   });
 }
 
+// ── 강의실 빈 시간 보기 ─────────────────────────────
+function initEmptyRooms() {
+  document.getElementById('btn-empty-rooms').addEventListener('click', async () => {
+    const modal = new bootstrap.Modal(document.getElementById('empty-rooms-modal'));
+    const body  = document.getElementById('empty-rooms-body');
+    const filterEl = document.getElementById('empty-room-filters');
+
+    body.innerHTML = '<div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> 불러오는 중...</div>';
+    filterEl.innerHTML = '';
+    modal.show();
+
+    try {
+      const data = await Api.getEmptyRooms(state.month, state.type);
+      renderEmptyRooms(data, body, filterEl);
+    } catch(e) {
+      body.innerHTML = '<div class="text-danger p-3">⚠️ 데이터를 불러오지 못했습니다.</div>';
+    }
+  });
+
+  document.getElementById('empty-room-reset').addEventListener('click', () => {
+    document.querySelectorAll('#empty-room-filters .btn').forEach(b => b.classList.remove('active', 'btn-warning'));
+    document.querySelectorAll('#empty-rooms-body .room-tag').forEach(el => el.style.display = '');
+    document.querySelectorAll('#empty-rooms-body .time-row').forEach(el => el.style.display = '');
+  });
+}
+
+function renderEmptyRooms(data, body, filterEl) {
+  const { empty_by_time, rooms } = data;
+
+  if (!empty_by_time.length) {
+    body.innerHTML = '<div class="empty-state">빈 강의실이 없습니다.</div>';
+    return;
+  }
+
+  // 강의실 필터 버튼
+  rooms.forEach(room => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-outline-warning';
+    btn.textContent = room;
+    btn.addEventListener('click', () => {
+      const active = btn.classList.toggle('active');
+      btn.classList.toggle('btn-warning', active);
+      btn.classList.toggle('btn-outline-warning', !active);
+
+      const activeRooms = [...document.querySelectorAll('#empty-room-filters .btn.active')]
+        .map(b => b.textContent);
+
+      document.querySelectorAll('#empty-rooms-body .time-row').forEach(row => {
+        if (activeRooms.length === 0) {
+          row.style.display = '';
+          row.querySelectorAll('.room-tag').forEach(t => t.style.display = '');
+          return;
+        }
+        const visible = [...row.querySelectorAll('.room-tag')].filter(t => {
+          const show = activeRooms.includes(t.dataset.room);
+          t.style.display = show ? '' : 'none';
+          return show;
+        });
+        row.style.display = visible.length ? '' : 'none';
+      });
+    });
+    filterEl.appendChild(btn);
+  });
+
+  // 빈 시간대 테이블
+  const html = empty_by_time.map(({ time, rooms: emptyRooms }) => `
+    <div class="time-row d-flex align-items-start gap-2 py-2 border-bottom">
+      <span class="badge bg-secondary" style="min-width:52px;font-size:0.78rem">${time}</span>
+      <div class="d-flex flex-wrap gap-1">
+        ${emptyRooms.map(r => `
+          <span class="room-tag badge bg-warning text-dark" data-room="${r}">${r}</span>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  body.innerHTML = `
+    <div style="font-size:0.82rem;color:#6c757d" class="mb-2 px-1">
+      총 <strong>${empty_by_time.length}</strong>개 시간대에 빈 강의실 있음
+    </div>
+    ${html}
+  `;
+}
+
 // ── 엑셀 내보내기 ───────────────────────────────────
 function initExport() {
   document.getElementById('btn-export').addEventListener('click', () => {
@@ -535,4 +619,5 @@ document.addEventListener('DOMContentLoaded', () => {
   main();
   initUpload();
   initExport();
+  initEmptyRooms();
 });

@@ -23,5 +23,8 @@ const Api = (() => {
       return fetch('/api/upload', { method: 'POST', body: form })
         .then(res => res.json());
     },
+    getEmptyRooms(month, type) {
+      return _fetch(`/api/empty-rooms?month=${month}&type=${type}`);
+    },
   };
 })();
