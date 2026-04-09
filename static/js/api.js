@@ -26,5 +26,8 @@ const Api = (() => {
     getEmptyRooms(month, type) {
       return _fetch(`/api/empty-rooms?month=${month}&type=${type}`);
     },
+    getStats(month, type) {
+      return _fetch(`/api/stats?month=${month}&type=${type}`);
+    },
   };
 })();

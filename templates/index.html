@@ -24,6 +24,7 @@
     <span id="today-display" class="text-muted"></span>
     <button id="btn-upload" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#upload-modal" title="시간표 파일 업로드">📤 업로드</button>
     <button id="btn-export" class="btn btn-sm btn-outline-success" title="엑셀 내보내기">⬇️ 엑셀</button>
+    <button id="btn-stats" class="btn btn-sm btn-outline-info" title="통계 대시보드">📊 통계</button>
     <button id="btn-empty-rooms" class="btn btn-sm btn-outline-warning" title="강의실 빈 시간 보기">🏫 빈 강의실</button>
     <button id="btn-dark" class="btn btn-sm btn-outline-secondary" title="다크모드 전환">🌙</button>
     <button class="btn btn-sm btn-outline-secondary" onclick="window.print()" title="인쇄">🖨️</button>
@@ -137,6 +138,24 @@
       <div class="modal-footer py-2">
         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">취소</button>
         <button id="btn-do-upload" class="btn btn-sm btn-primary">업로드</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 통계 대시보드 모달 ─────────────────────────── -->
+<div class="modal fade" id="stats-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">📊 통계 대시보드</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="stats-body">
+        <div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">닫기</button>
       </div>
     </div>
   </div>

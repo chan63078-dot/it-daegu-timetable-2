@@ -512,6 +512,144 @@ function initUpload() {
   });
 }
 
+// ── 통계 대시보드 ───────────────────────────────────
+function initStats() {
+  document.getElementById('btn-stats').addEventListener('click', async () => {
+    const modal = new bootstrap.Modal(document.getElementById('stats-modal'));
+    const body  = document.getElementById('stats-body');
+    body.innerHTML = '<div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> 불러오는 중...</div>';
+    modal.show();
+
+    try {
+      const data = await Api.getStats(state.month, state.type);
+      renderStats(data, body);
+    } catch(e) {
+      body.innerHTML = '<div class="text-danger p-3">⚠️ 데이터를 불러오지 못했습니다.</div>';
+    }
+  });
+}
+
+function renderStats(d, body) {
+  const typeLabel = state.type === 'weekday' ? '평일' : '주말';
+
+  // 진행 상태 카드
+  const statusCards = [
+    { key: '진행중',   label: '진행중',   cls: 'success' },
+    { key: '오늘개강', label: '오늘개강', cls: 'primary' },
+    { key: '예정',     label: '예정',     cls: 'secondary' },
+    { key: '종료',     label: '종료',     cls: 'dark' },
+  ].map(({ key, label, cls }) => `
+    <div class="col-6 col-md-3">
+      <div class="card text-center border-${cls}">
+        <div class="card-body py-3">
+          <div style="font-size:1.6rem;font-weight:700" class="text-${cls}">${d.status_count[key] || 0}</div>
+          <div style="font-size:0.78rem" class="text-muted">${label}</div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // 강의실별 배정률 바
+  const roomRows = d.room_stats.map(r => {
+    const pct = r.배정률;
+    const barCls = pct >= 80 ? 'bg-danger' : pct >= 50 ? 'bg-warning' : 'bg-success';
+    return `
+      <tr>
+        <td style="font-size:0.82rem;white-space:nowrap">${r.room}</td>
+        <td class="text-center">${r.과정수}</td>
+        <td class="text-center">${r.배정} / ${r.수강인원}</td>
+        <td style="min-width:100px">
+          <div class="d-flex align-items-center gap-1">
+            <div class="progress flex-grow-1" style="height:8px">
+              <div class="progress-bar ${barCls}" style="width:${pct}%"></div>
+            </div>
+            <span style="font-size:0.72rem;width:32px">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  // 강사별 강의 수
+  const teacherRows = d.teacher_stats.slice(0, 15).map(t => `
+    <tr>
+      <td style="font-size:0.82rem">${t.강사}</td>
+      <td class="text-center">${t.강의수}</td>
+      <td>
+        <div class="progress" style="height:6px">
+          <div class="progress-bar bg-info" style="width:${Math.min(100, t.강의수 / (d.teacher_stats[0]?.강의수 || 1) * 100)}%"></div>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  // 수강 독려 필요 과정
+  const lowFillRows = d.low_fill_courses.length === 0
+    ? '<tr><td colspan="5" class="text-center text-muted py-2">해당 없음</td></tr>'
+    : d.low_fill_courses.map(c => {
+        const pct = c.수강인원 ? Math.round((c.배정 / c.수강인원) * 100) : 0;
+        return `
+          <tr>
+            <td style="font-size:0.8rem">${c.과정명}</td>
+            <td style="font-size:0.8rem">${c.room}</td>
+            <td class="text-center">${c.강사 || '-'}</td>
+            <td class="text-center">${c.배정} / ${c.수강인원}</td>
+            <td><span class="badge bg-danger">${pct}%</span></td>
+          </tr>`;
+      }).join('');
+
+  body.innerHTML = `
+    <h6 class="mb-3 text-muted">${state.month}월 ${typeLabel} — 전체 과정 <strong class="text-dark">${d.total}</strong>개</h6>
+
+    <!-- 상태 요약 -->
+    <div class="row g-2 mb-4">${statusCards}</div>
+
+    <div class="row g-3">
+      <!-- 강의실별 배정률 -->
+      <div class="col-12 col-lg-7">
+        <div class="card">
+          <div class="card-header py-2" style="font-size:0.85rem;font-weight:600">🏫 강의실별 배정 현황</div>
+          <div class="card-body p-0">
+            <div style="max-height:260px;overflow-y:auto">
+              <table class="table table-sm mb-0">
+                <thead style="position:sticky;top:0;background:var(--bs-body-bg)">
+                  <tr><th>강의실</th><th class="text-center">과정수</th><th class="text-center">배정/수강인원</th><th>배정률</th></tr>
+                </thead>
+                <tbody>${roomRows}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 강사별 강의수 -->
+      <div class="col-12 col-lg-5">
+        <div class="card">
+          <div class="card-header py-2" style="font-size:0.85rem;font-weight:600">👤 강사별 강의수 (상위 15명)</div>
+          <div class="card-body p-0">
+            <div style="max-height:260px;overflow-y:auto">
+              <table class="table table-sm mb-0">
+                <thead style="position:sticky;top:0;background:var(--bs-body-bg)">
+                  <tr><th>강사</th><th class="text-center">강의수</th><th style="min-width:80px"></th></tr>
+                </thead>
+                <tbody>${teacherRows}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 수강 독려 필요 -->
+    <div class="card mt-3">
+      <div class="card-header py-2" style="font-size:0.85rem;font-weight:600">⚠️ 수강 독려 필요 과정 (배정률 50% 미만)</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>과정명</th><th>강의실</th><th class="text-center">강사</th><th class="text-center">배정/수강인원</th><th>배정률</th></tr></thead>
+          <tbody>${lowFillRows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
 // ── 강의실 빈 시간 보기 ─────────────────────────────
 function initEmptyRooms() {
   document.getElementById('btn-empty-rooms').addEventListener('click', async () => {
@@ -620,4 +758,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initUpload();
   initExport();
   initEmptyRooms();
+  initStats();
 });

@@ -159,6 +159,70 @@ def api_empty_rooms():
     })
 
 
+@app.route('/api/stats')
+def api_stats():
+    month    = request.args.get('month', 4, type=int)
+    type_key = request.args.get('type', 'weekday')
+
+    data = get_timetable(month, type_key)
+    if data is None:
+        return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
+
+    courses = data['courses']
+
+    # 진행 상태별 집계
+    status_count = {'오늘개강': 0, '진행중': 0, '종료': 0, '예정': 0}
+    for c in courses:
+        s = c.get('진행상태', '예정')
+        status_count[s] = status_count.get(s, 0) + 1
+
+    # 강의실별 집계
+    room_stats = {}
+    for c in courses:
+        r = c.get('room', '')
+        if r not in room_stats:
+            room_stats[r] = {'과정수': 0, '배정합': 0, '수강인원합': 0}
+        room_stats[r]['과정수'] += 1
+        room_stats[r]['배정합']    += c.get('배정', 0) or 0
+        room_stats[r]['수강인원합'] += c.get('수강인원', 0) or 0
+
+    room_list = []
+    for r, s in room_stats.items():
+        pct = round(s['배정합'] / s['수강인원합'] * 100) if s['수강인원합'] else 0
+        room_list.append({
+            'room': r,
+            '과정수': s['과정수'],
+            '배정': s['배정합'],
+            '수강인원': s['수강인원합'],
+            '배정률': pct,
+        })
+    room_list.sort(key=lambda x: -x['배정률'])
+
+    # 강사별 집계
+    teacher_stats = {}
+    for c in courses:
+        t = c.get('강사') or '미배정'
+        teacher_stats[t] = teacher_stats.get(t, 0) + 1
+    teacher_list = sorted(teacher_stats.items(), key=lambda x: -x[1])
+
+    # 배정률 낮은 과정 (수강 독려 필요: 배정률 50% 미만, 예정/진행중)
+    low_fill = [
+        c for c in courses
+        if c.get('수강인원') and c.get('수강인원') > 0
+        and (c.get('배정', 0) or 0) / c['수강인원'] < 0.5
+        and c.get('진행상태') in ('예정', '진행중', '오늘개강')
+    ]
+    low_fill.sort(key=lambda c: (c.get('배정', 0) or 0) / c['수강인원'])
+
+    return jsonify({
+        'total': len(courses),
+        'status_count': status_count,
+        'room_stats': room_list,
+        'teacher_stats': [{'강사': t, '강의수': cnt} for t, cnt in teacher_list],
+        'low_fill_courses': low_fill[:10],
+    })
+
+
 @app.route('/api/courses')
 def api_courses():
     month = request.args.get('month', 4, type=int)
