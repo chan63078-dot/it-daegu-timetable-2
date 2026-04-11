@@ -4,6 +4,7 @@
 
 // ── 전역 상태 ───────────────────────────────────────
 let state = {
+  branch: '대구',
   month: 4,
   type: 'weekday',
   view: 'grid',       // 'grid' | 'list'
@@ -31,19 +32,46 @@ function setLoading(on) {
 // ── URL 파라미터 ────────────────────────────────────
 function readUrlParams() {
   const params = new URLSearchParams(location.search);
-  if (params.has('month')) state.month = parseInt(params.get('month')) || state.month;
-  if (params.has('type'))  state.type  = params.get('type') || state.type;
-  if (params.has('q'))     state.query = params.get('q');
-  if (params.has('view'))  state.view  = params.get('view');
+  if (params.has('branch')) state.branch = params.get('branch') || state.branch;
+  if (params.has('month'))  state.month  = parseInt(params.get('month')) || state.month;
+  if (params.has('type'))   state.type   = params.get('type') || state.type;
+  if (params.has('q'))      state.query  = params.get('q');
+  if (params.has('view'))   state.view   = params.get('view');
 }
 
 function pushUrl() {
   const params = new URLSearchParams();
+  params.set('branch', state.branch);
   params.set('month', state.month);
   params.set('type', state.type);
   if (state.query) params.set('q', state.query);
   params.set('view', state.view);
   history.replaceState(null, '', '?' + params.toString());
+}
+
+// ── 지점 탭 초기화 ──────────────────────────────────
+function initBranchTabs(branches) {
+  const el = document.getElementById('branch-tabs');
+  el.innerHTML = '';
+  branches.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = `btn btn-sm ${b === state.branch ? 'btn-dark' : 'btn-outline-secondary'}`;
+    btn.textContent = `IT${b}`;
+    btn.dataset.branch = b;
+    btn.addEventListener('click', () => switchBranch(b));
+    el.appendChild(btn);
+  });
+}
+
+async function switchBranch(b) {
+  state.branch = b;
+  document.querySelectorAll('#branch-tabs button').forEach(btn => {
+    btn.className = `btn btn-sm ${btn.dataset.branch === b ? 'btn-dark' : 'btn-outline-secondary'}`;
+  });
+  document.querySelector('.navbar-brand').textContent = `📋 IT${b} 강의시간표`;
+  const files = await Api.getFiles(b);
+  initTabs(files);
+  await loadData();
 }
 
 // ── 탭 초기화 ───────────────────────────────────────
@@ -53,23 +81,20 @@ function initTabs(availableFiles) {
   monthTabEl.innerHTML = '';
   typeTabEl.innerHTML  = '';
 
-  // 오늘 날짜 기준으로 기본 월 설정
   const todayMonth = today().getMonth() + 1;
-  const months = [4, 5, 6, 7, 8];
+  const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   const hasFile = (m, t) => availableFiles.some(f => f.month === m && f.type === t);
+  const activeMonths = months.filter(m => hasFile(m, 'weekday') || hasFile(m, 'weekend'));
 
-  // 현재 state.month가 파일이 없으면 가장 가까운 월로 변경
   if (!hasFile(state.month, state.type)) {
-    const closest = months.find(m => hasFile(m, 'weekday') || hasFile(m, 'weekend'));
+    const closest = activeMonths.find(m => hasFile(m, 'weekday') || hasFile(m, 'weekend'));
     if (closest) state.month = closest;
   }
 
-  months.forEach(m => {
-    const hasAny = hasFile(m, 'weekday') || hasFile(m, 'weekend');
+  activeMonths.forEach(m => {
     const btn = document.createElement('button');
     btn.className = `btn btn-sm ${m === state.month ? 'btn-primary' : 'btn-outline-secondary'}`;
     btn.textContent = `${m}월`;
-    btn.disabled = !hasAny;
     btn.dataset.month = m;
     if (m === todayMonth) btn.innerHTML += ' <span class="badge bg-danger" style="font-size:0.55rem">오늘</span>';
     btn.addEventListener('click', () => switchMonth(m));
@@ -119,7 +144,7 @@ async function switchType(t) {
 async function loadData() {
   setLoading(true);
   try {
-    const data = await Api.getTimetable(state.month, state.type);
+    const data = await Api.getTimetable(state.branch, state.month, state.type);
     state.timetable = data;
 
     List.setCourses(data.courses);
@@ -399,8 +424,13 @@ async function main() {
   // 다크모드
   initDarkMode();
 
+  // 지점 탭 초기화
+  const branches = await Api.getBranches();
+  initBranchTabs(branches);
+  document.querySelector('.navbar-brand').textContent = `📋 IT${state.branch} 강의시간표`;
+
   // 파일 목록 로드 → 탭 초기화
-  const files = await Api.getFiles();
+  const files = await Api.getFiles(state.branch);
   initTabs(files);
   initViewToggle();
   initSearch();
@@ -468,7 +498,8 @@ function initUpload() {
     uploadBtn.textContent = '업로드 중...';
 
     try {
-      const res = await Api.upload(month, typeKey, selectedFile);
+      const uploadBranch = document.getElementById('upload-branch').value || state.branch;
+      const res = await Api.upload(uploadBranch, month, typeKey, selectedFile);
 
       if (res.error) {
         resultEl.innerHTML = `<span class="text-danger">❌ ${res.error}</span>`;
@@ -476,7 +507,7 @@ function initUpload() {
         resultEl.innerHTML = `<span class="text-success">✅ ${res.file} 저장 완료 (과정 ${res.total}개 인식)</span>`;
 
         // 탭 목록 갱신 후 해당 월로 이동
-        const files = await Api.getFiles();
+        const files = await Api.getFiles(state.branch);
         initTabs(files);
         updateFilterOptions(state.timetable?.courses || []);
 
@@ -521,7 +552,7 @@ function initStats() {
     modal.show();
 
     try {
-      const data = await Api.getStats(state.month, state.type);
+      const data = await Api.getStats(state.branch, state.month, state.type);
       renderStats(data, body);
     } catch(e) {
       body.innerHTML = '<div class="text-danger p-3">⚠️ 데이터를 불러오지 못했습니다.</div>';
@@ -662,7 +693,7 @@ function initEmptyRooms() {
     modal.show();
 
     try {
-      const data = await Api.getEmptyRooms(state.month, state.type);
+      const data = await Api.getEmptyRooms(state.branch, state.month, state.type);
       renderEmptyRooms(data, body, filterEl);
     } catch(e) {
       body.innerHTML = '<div class="text-danger p-3">⚠️ 데이터를 불러오지 못했습니다.</div>';
@@ -742,8 +773,9 @@ function initExport() {
     const query   = state.query;
 
     const params = new URLSearchParams({
-      month: state.month,
-      type:  state.type,
+      branch: state.branch,
+      month:  state.month,
+      type:   state.type,
     });
     if (teacher) params.set('teacher', teacher);
     if (room)    params.set('room', room);
